@@ -61,12 +61,13 @@ def main():
     # Fetching user info that would be sent to GitHub
     user_name = get_git_config('user.name')
     user_email = get_git_config('user.email')
+    github_user = get_git_config('github.user')
 
-    print(f"Git User:      {user_name}")
+    print(f"Git User Name: {user_name}")
     print(f"Git Email:     {user_email}")
+    print(f"GitHub User:   {github_user}")
     
     print("\n" + "=" * 40)
 
 if __name__ == "__main__":
     main()
-
