@@ -12,6 +12,15 @@ def get_git_config(config_key):
     except FileNotFoundError:
         return "Git not installed"
 
+def get_git_version():
+    try:
+        return subprocess.check_output(['git', '--version'], text=True).strip()
+    except FileNotFoundError:
+        return "Git not installed"
+
+def get_python_version():
+    return sys.version.split()[0]  # Get just the version number (e.g., '3.8.10')
+
 def main():
     print("=" * 40)
     print("   MY FIRST PYTHON APP - ENVIRONMENT INFO")
@@ -25,10 +34,24 @@ def main():
     print(f"Kernel/Release:{platform.release()}")
     # sys.version gives us the specific version of Python running
     print(f"Python Version:{sys.version.split()[0]}")
-
     # 2. Git/GitHub Environment Information
     print("\n[Git/GitHub Configuration]")
-    
+    # 3. Check if Git is installed and get its version
+    print("\n[Git Information]")
+    # 4. Fetching Git version using subprocess to run 'git --version' command
+    print("Checking for Git installation and version...")
+    print("Running 'git --version' command...")
+    print("This will help us determine if Git is installed and which version is available.")
+    print("If Git is not installed, we will see a message indicating that.")
+    # 5. Fetching user info that would be sent to GitHub using 'git config' commands
+    print("\n[Git User Configuration]")
+    print("Fetching Git user name and email configuration...")
+    print("This will show us the user name and email that Git is configured to use for commits and interactions with GitHub.") 
+    # 6. Displaying the results
+    print("\n[Results]")
+    print("\n" + "=" * 40)
+
+    # Check if Git is installed and get its version using the helper function       
     try:
         git_version = subprocess.check_output(['git', '--version'], text=True).strip()
         print(f"Git Version:   {git_version}")
