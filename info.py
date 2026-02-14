@@ -1,72 +1,105 @@
 import platform
 import subprocess
 import sys
+import os
+
+# Set the path to the git repository to ensure commands run in the correct directory
+GIT_REPO_PATH = os.path.dirname(os.path.abspath(__file__))
 
 def get_git_config(config_key):
     """Helper function to run git config commands safely."""
     try:
-        # subprocess allows us to run terminal commands from within Python
-        return subprocess.check_output(['git', 'config', config_key], text=True).strip()
-    except subprocess.CalledProcessError:
+        return subprocess.check_output(
+            ['git', 'config', config_key], 
+            text=True, 
+            stderr=subprocess.DEVNULL, 
+            cwd=GIT_REPO_PATH
+        ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
         return "Not configured"
-    except FileNotFoundError:
-        return "Git not installed"
 
 def get_git_version():
+    """Gets the installed Git version."""
     try:
-        return subprocess.check_output(['git', '--version'], text=True).strip()
+        return subprocess.check_output(
+            ['git', '--version'], 
+            text=True, 
+            stderr=subprocess.DEVNULL, 
+            cwd=GIT_REPO_PATH
+        ).strip()
     except FileNotFoundError:
-        return "Git not installed"
+        return "Not installed"
 
-def get_python_version():
-    return sys.version.split()[0]  # Get just the version number (e.g., '3.8.10')
+def get_git_branches(remote=False):
+    """Gets local or remote git branches."""
+    command = ['git', 'branch', '--format=%(refname:short)']
+    if remote:
+        command.append('-r')
+    
+    try:
+        output = subprocess.check_output(
+            command, 
+            text=True, 
+            stderr=subprocess.PIPE, 
+            cwd=GIT_REPO_PATH
+        )
+        if not output:
+            return []
+        # Clean up branch names, removing remote prefix for display
+        branches = [b.strip() for b in output.strip().split('\n')]
+        if remote:
+            # Handles remote branches like 'origin/main' -> 'main'
+            return [b.split('/', 1)[-1] for b in branches if '->' not in b]
+        return branches
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return []
+
+def print_linux_info():
+    """Prints Linux environment information."""
+    print("[Linux Environment]")
+    print(f"  OS Type:       {platform.system()}")
+    print(f"  Kernel/Release:{platform.release()}")
+
+def print_python_info():
+    """Prints Python environment information."""
+    print("\n[Python Environment]")
+    print(f"  Version:       {sys.version.split()[0]}")
+    print(f"  Compiler:      {platform.python_compiler()}")
+
+def print_git_info():
+    """Prints Git environment and user information."""
+    print("\n[Git Environment]")
+    git_version = get_git_version()
+    
+    if not git_version:
+        git_version = "Not installed"
+
+    print(f"  Version:       {git_version}")
+
+    if git_version != "Not installed":
+        local_branches = get_git_branches(remote=False)
+        remote_branches = get_git_branches(remote=True)
+        
+        if local_branches:
+            print(f"  Local Branches:  {', '.join(local_branches)}")
+        if remote_branches:
+            print(f"  Remote Branches: {', '.join(remote_branches)}")
+
+        print("\n[Git User Information]")
+        print(f"  User Name:     {get_git_config('user.name')}")
+        print(f"  User Email:    {get_git_config('user.email')}")
+        print(f"  GitHub User:   {get_git_config('github.user')}")
 
 def main():
+    """Prints formatted environment information."""
     print("=" * 40)
-    print("   MY FIRST PYTHON APP - ENVIRONMENT INFO")
+    print("      ENVIRONMENT INFORMATION")
     print("=" * 40)
 
-    # 1. Local Debian/WSL Environment Information
-    print("\n[Local System Information]")
-    # platform.system() returns the OS name (e.g., Linux)
-    print(f"OS Type:       {platform.system()}")
-    # platform.release() often contains 'WSL' in the name on Windows Subsystem for Linux
-    print(f"Kernel/Release:{platform.release()}")
-    # sys.version gives us the specific version of Python running
-    print(f"Python Version:{sys.version.split()[0]}")
-    # 2. Git/GitHub Environment Information
-    print("\n[Git/GitHub Configuration]")
-    # 3. Check if Git is installed and get its version
-    print("\n[Git Information]")
-    # 4. Fetching Git version using subprocess to run 'git --version' command
-    print("Checking for Git installation and version...")
-    print("Running 'git --version' command...")
-    print("This will help us determine if Git is installed and which version is available.")
-    print("If Git is not installed, we will see a message indicating that.")
-    # 5. Fetching user info that would be sent to GitHub using 'git config' commands
-    print("\n[Git User Configuration]")
-    print("Fetching Git user name and email configuration...")
-    print("This will show us the user name and email that Git is configured to use for commits and interactions with GitHub.") 
-    # 6. Displaying the results
-    print("\n[Results]")
-    print("\n" + "=" * 40)
+    print_linux_info()
+    print_python_info()
+    print_git_info()
 
-    # Check if Git is installed and get its version using the helper function       
-    try:
-        git_version = subprocess.check_output(['git', '--version'], text=True).strip()
-        print(f"Git Version:   {git_version}")
-    except FileNotFoundError:
-        print("Git Version:   Git is not installed")
-
-    # Fetching user info that would be sent to GitHub
-    user_name = get_git_config('user.name')
-    user_email = get_git_config('user.email')
-    github_user = get_git_config('github.user')
-
-    print(f"Git User Name: {user_name}")
-    print(f"Git Email:     {user_email}")
-    print(f"GitHub User:   {github_user}")
-    
     print("\n" + "=" * 40)
 
 if __name__ == "__main__":
