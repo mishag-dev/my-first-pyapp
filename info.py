@@ -68,27 +68,54 @@ def print_python_info():
 
 def print_git_info():
     """Prints Git environment and user information."""
-    print("\n[Git Environment]")
+    print("\n[Git Information]")
     git_version = get_git_version()
-    
-    if not git_version:
-        git_version = "Not installed"
+
+    if "Not installed" in git_version:
+        print(f"  Version:       {git_version}")
+        return
 
     print(f"  Version:       {git_version}")
+    
+    local_branches = get_git_branches(remote=False)
+    remote_branches = get_git_branches(remote=True)
+    
+    if local_branches:
+        print(f"  Local Branches:  {', '.join(local_branches)}")
+    if remote_branches:
+        print(f"  Remote Branches: {', '.join(remote_branches)}")
 
-    if git_version != "Not installed":
-        local_branches = get_git_branches(remote=False)
-        remote_branches = get_git_branches(remote=True)
-        
-        if local_branches:
-            print(f"  Local Branches:  {', '.join(local_branches)}")
-        if remote_branches:
-            print(f"  Remote Branches: {', '.join(remote_branches)}")
+    print(f"  User Name:     {get_git_config('user.name')}")
+    print(f"  User Email:    {get_git_config('user.email')}")
+    print(f"  GitHub User:   {get_git_config('github.user')}")
 
-        print("\n[Git User Information]")
-        print(f"  User Name:     {get_git_config('user.name')}")
-        print(f"  User Email:    {get_git_config('user.email')}")
-        print(f"  GitHub User:   {get_git_config('github.user')}")
+def print_kubernetes_info():
+    """Prints Kubernetes environment and health status."""
+    print("\n[Kubernetes Environment]")
+    try:
+        context = subprocess.check_output(
+            ['kubectl', 'config', 'current-context'], 
+            text=True, 
+            stderr=subprocess.DEVNULL
+        ).strip()
+        print(f"  Current Context: {context}")
+
+        cluster_info = subprocess.check_output(
+            ['kubectl', 'cluster-info'], 
+            text=True, 
+            stderr=subprocess.DEVNULL
+        ).strip().split('\n')[0] # Display only the first line of cluster-info
+        print(f"  Cluster Info:    {cluster_info}")
+
+        health_status = subprocess.check_output(
+            ['kubectl', 'get', '--raw=/readyz?verbose'], 
+            text=True, 
+            stderr=subprocess.DEVNULL
+        ).strip()
+        print(f"  Health Status:   {health_status}")
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("  kubectl not found or not configured.")
 
 def main():
     """Prints formatted environment information."""
@@ -99,6 +126,7 @@ def main():
     print_linux_info()
     print_python_info()
     print_git_info()
+    print_kubernetes_info()
 
     print("\n" + "=" * 40)
 
