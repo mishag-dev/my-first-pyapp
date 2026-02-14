@@ -107,12 +107,19 @@ def print_kubernetes_info():
         ).strip().split('\n')[0] # Display only the first line of cluster-info
         print(f"  Cluster Info:    {cluster_info}")
 
-        health_status = subprocess.check_output(
-            ['kubectl', 'get', '--raw=/readyz?verbose'], 
-            text=True, 
+        pod_status_output = subprocess.check_output(
+            ['kubectl', 'get', 'pods', '--all-namespaces', '-o', 'jsonpath={.items[*].status.conditions[?(@.type=="Ready")].status}'],
+            text=True,
             stderr=subprocess.DEVNULL
         ).strip()
-        print(f"  Health Status:   {health_status}")
+        if pod_status_output:
+            statuses = pod_status_output.split()
+            ready_pods = statuses.count('True')
+            total_pods = len(statuses)
+            health_summary = f"{ready_pods}/{total_pods} pods ready"
+        else:
+            health_summary = "No pods found"
+        print(f"  Health Status:   {health_summary}")
 
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("  kubectl not found or not configured.")
