@@ -13,8 +13,9 @@ spec:
         app: info-app
     spec:
       containers:
-      - name: info-app
-        image: info-app:latest
+      - name: my-python-app
+        image: info-app:v1  # <--- Match the name you used in the 'docker build'
+        imagePullPolicy: IfNotPresent  # <--- THIS IS THE FIX
         ports:
         - containerPort: 5000
 ---
