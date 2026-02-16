@@ -1,7 +1,10 @@
+from flask import Flask, Response
 import platform
 import subprocess
 import sys
 import os
+
+app = Flask(__name__)
 
 # Set the path to the git repository to ensure commands run in the correct directory
 GIT_REPO_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -54,61 +57,56 @@ def get_git_branches(remote=False):
     except (subprocess.CalledProcessError, FileNotFoundError):
         return []
 
-def print_linux_info():
-    """Prints Linux environment information."""
-    print("[Linux Environment]")
-    print(f"  OS Type:       {platform.system()}")
-    print(f"  Kernel/Release:{platform.release()}")
+def generate_info_text():
+    """Generates the environment information as a string."""
+    info = []
+    info.append("=" * 40)
+    info.append("      ENVIRONMENT INFORMATION")
+    info.append("=" * 40)
+    
+    info.append("\n[Linux Environment]")
+    info.append(f"  OS Type:       {platform.system()}")
+    info.append(f"  Kernel/Release:{platform.release()}")
 
-def print_python_info():
-    """Prints Python environment information."""
-    print("\n[Python Environment]")
-    print(f"  Version:       {sys.version.split()[0]}")
-    print(f"  Compiler:      {platform.python_compiler()}")
+    info.append("\n[Python Environment]")
+    info.append(f"  Version:       {sys.version.split()[0]}")
+    info.append(f"  Compiler:      {platform.python_compiler()}")
 
-def print_git_info():
-    """Prints Git environment and user information."""
-    print("\n[Git Information]")
+    info.append("\n[Git Information]")
     git_version = get_git_version()
-
-    if "Not installed" in git_version:
-        print(f"  Version:       {git_version}")
-        return
-
-    print(f"  Version:       {git_version}")
+    info.append(f"  Version:       {git_version}")
     
-    local_branches = get_git_branches(remote=False)
-    remote_branches = get_git_branches(remote=True)
-    
-    if local_branches:
-        print(f"  Local Branches:  {', '.join(local_branches)}")
-    if remote_branches:
-        print(f"  Remote Branches: {', '.join(remote_branches)}")
+    if "Not installed" not in git_version:
+        local_branches = get_git_branches(remote=False)
+        remote_branches = get_git_branches(remote=True)
+        
+        if local_branches:
+            info.append(f"  Local Branches:  {', '.join(local_branches)}")
+        if remote_branches:
+            info.append(f"  Remote Branches: {', '.join(remote_branches)}")
 
-    print(f"  User Name:     {get_git_config('user.name')}")
-    print(f"  User Email:    {get_git_config('user.email')}")
-    print(f"  GitHub User:   {get_git_config('github.user')}")
+        info.append(f"  User Name:     {get_git_config('user.name')}")
+        info.append(f"  User Email:    {get_git_config('user.email')}")
+        info.append(f"  GitHub User:   {get_git_config('github.user')}")
 
-def print_kubernetes_info():
-    """Prints Kubernetes environment and health status."""
-    print("\n[Kubernetes Environment]")
+    info.append("\n[Kubernetes Environment]")
     try:
         context = subprocess.check_output(
             ['kubectl', 'config', 'current-context'], 
             text=True, 
             stderr=subprocess.DEVNULL
         ).strip()
-        print(f"  Current Context: {context}")
+        info.append(f"  Current Context: {context}")
 
         cluster_info = subprocess.check_output(
             ['kubectl', 'cluster-info'], 
             text=True, 
             stderr=subprocess.DEVNULL
-        ).strip().split('\n')[0] # Display only the first line of cluster-info
-        print(f"  Cluster Info:    {cluster_info}")
+        ).strip().split('\n')[0]
+        info.append(f"  Cluster Info:    {cluster_info}")
 
         pod_status_output = subprocess.check_output(
-            ['kubectl', 'get', 'pods', '--all-namespaces', '-o', 'jsonpath={.items[*].status.conditions[?(@.type=="Ready")].status}'],
+            ['kubectl', 'get', 'pods', '--all-namespaces', '-o', 'jsonpath={.items[*].status.conditions[?(@.type==\"Ready\")].status}'],
             text=True,
             stderr=subprocess.DEVNULL
         ).strip()
@@ -119,23 +117,17 @@ def print_kubernetes_info():
             health_summary = f"{ready_pods}/{total_pods} pods ready"
         else:
             health_summary = "No pods found"
-        print(f"  Health Status:   {health_summary}")
+        info.append(f"  Health Status:   {health_summary}")
 
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print("  kubectl not found or not configured.")
+        info.append("  kubectl not found or not configured.")
 
-def main():
-    """Prints formatted environment information."""
-    print("=" * 40)
-    print("      ENVIRONMENT INFORMATION")
-    print("=" * 40)
+    info.append("\n" + "=" * 40)
+    return "\n".join(info)
 
-    print_linux_info()
-    print_python_info()
-    print_git_info()
-    print_kubernetes_info()
+@app.route('/')
+def index():
+    return Response(generate_info_text(), mimetype='text/plain')
 
-    print("\n" + "=" * 40)
-
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

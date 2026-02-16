@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: info-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: info-app
+  template:
+    metadata:
+      labels:
+        app: info-app
+    spec:
+      containers:
+      - name: info-app
+        image: info-app:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: info-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: info-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
