@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: statgen-config
+data:
+  GEN_DELAY_MIN: "1"
+  GEN_DELAY_MAX: "5"

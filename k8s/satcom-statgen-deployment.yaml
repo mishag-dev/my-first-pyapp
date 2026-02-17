@@ -21,3 +21,14 @@ spec:
           value: "rabbitmq"
         - name: PYTHONUNBUFFERED
           value: "1"
+        # Pulling from ConfigMap
+        - name: DELAY_MIN
+          valueFrom:
+            configMapKeyRef:
+              name: statgen-config
+              key: GEN_DELAY_MIN
+        - name: DELAY_MAX
+          valueFrom:
+            configMapKeyRef:
+              name: statgen-config
+              key: GEN_DELAY_MAX

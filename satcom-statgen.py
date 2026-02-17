@@ -1,62 +1,65 @@
 import pika
-import json
 import time
+import json
 import random
-import os
-import sys
+import os  # Required to read environment variables
 
-def generate_air_channel_stats():
-    """Generates random statistics for a satellite air channel."""
-    return {
-        'timestamp': time.time(),
-        'satellite_id': f'SAT-{random.randint(1000, 9999)}',
-        'channel_id': f'CHAN-{random.randint(1, 12)}',
-        'signal_to_noise_ratio': random.uniform(10, 30),
-        'bit_error_rate': random.uniform(1e-7, 1e-5),
-        'carrier_frequency': random.uniform(12.2, 12.7),
-        'doppler_shift': random.uniform(-5, 5),
-        'attenuation': random.uniform(0.5, 3.0),
-        'link_margin': random.uniform(3, 10),
-    }
+# --- Configuration ---
+# These now pull from your ConfigMap via the Deployment YAML
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
+DELAY_MIN = float(os.getenv("DELAY_MIN", 1.0))
+max_delay_env = os.getenv("DELAY_MAX", 5.0)
+DELAY_MAX = float(max_delay_env)
 
 def get_rabbitmq_connection():
-    """Attempts to connect to RabbitMQ with retry logic."""
-    rabbitmq_host = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
     while True:
         try:
-            print(f"[*] Attempting to connect to RabbitMQ at {rabbitmq_host}...")
+            print(f"[*] Attempting to connect to RabbitMQ at {RABBITMQ_HOST}...")
             connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=rabbitmq_host, connection_attempts=3, retry_delay=5)
+                pika.ConnectionParameters(host=RABBITMQ_HOST)
             )
             return connection
         except pika.exceptions.AMQPConnectionError:
-            print("[!] RabbitMQ not available yet. Retrying in 5 seconds...")
+            print("[!] Connection failed. Retrying in 5 seconds...")
             time.sleep(5)
 
-if __name__ == '__main__':
-    # Initial connection
+def generate_satellite_stats():
     connection = get_rabbitmq_connection()
     channel = connection.channel()
+
+    # Ensure the queue exists
     channel.queue_declare(queue='air_channel_stats')
 
-    print("[*] Successfully connected. Starting telemetry generation...")
+    print(f"[*] Successfully connected. Logic: Random delay between {DELAY_MIN}s and {DELAY_MAX}s.")
+    print("[*] Starting telemetry generation. Press Ctrl+C to exit.")
 
     try:
         while True:
-            stats = generate_air_channel_stats()
-            try:
-                channel.basic_publish(
-                    exchange='',
-                    routing_key='air_channel_stats',
-                    body=json.dumps(stats)
-                )
-                print(f" [x] Sent: {stats['satellite_id']} stats")
-            except pika.exceptions.AMQPConnectionError:
-                print("[!] Connection lost. Reconnecting...")
-                connection = get_rabbitmq_connection()
-                channel = connection.channel()
+            # Generate fake satellite telemetry
+            data = {
+                "satellite_id": f"SAT-{random.randint(1000, 9999)}",
+                "snr_db": round(random.uniform(5.0, 25.0), 2),
+                "doppler_shift_hz": random.randint(-5000, 5000),
+                "timestamp": time.time()
+            }
+
+            # Send to RabbitMQ
+            message = json.dumps(data)
+            channel.basic_publish(
+                exchange='',
+                routing_key='air_channel_stats',
+                body=message
+            )
             
-            time.sleep(random.randint(1, 5))
+            print(f" [x] Sent: {data['satellite_id']} | SNR: {data['snr_db']} dB")
+
+            # Use the values from the ConfigMap
+            sleep_time = random.uniform(DELAY_MIN, DELAY_MAX)
+            time.sleep(sleep_time)
+
     except KeyboardInterrupt:
-        print("Stopping...")
+        print("\n[!] Stopping generator...")
         connection.close()
+
+if __name__ == "__main__":
+    generate_satellite_stats()
