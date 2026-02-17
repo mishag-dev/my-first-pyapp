@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: satcom-consumer-app
-        image: taziar77/satcom-statgen:22087447368
+        image: taziar77/satcom-statgen:22087631082
         imagePullPolicy: Always
         command: ["python3", "satcom-consumer.py"] # Override to run consumer
         env:
