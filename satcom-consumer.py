@@ -9,21 +9,33 @@ QUEUE_NAME = "air_channel_stats"
 
 def process_telemetry(ch, method, properties, body):
     try:
-        # Parse the JSON message
         data = json.loads(body)
         
-        # Format a nice output
+        # Helper to safely get a float or return 0.0
+        def safe_float(key, alt_key=None):
+            val = data.get(key) or data.get(alt_key)
+            try:
+                return float(val) if val is not None else 0.0
+            except (ValueError, TypeError):
+                return 0.0
+
+        snr = safe_float('snr_db', 'signal_noice_ratio')
+        doppler = safe_float('doppler_shift_hz', 'doppler_shift')
+        freq = safe_float('carrier_frequency')
+
         print("-" * 40)
-        print(f"📡 SATELLITE REPORT: {data.get('satellite_id')}")
-        print(f"   SNR:      {data.get('signal_noice_ratio') or data.get('snr_db'):.2f} dB")
-        print(f"   Doppler:  {data.get('doppler_shift'):.2f} Hz")
-        print(f"   Freq:     {data.get('carrier_frequency'):.2f} MHz")
-        print(f"   Status:   PROCESSING SUCCESS")
+        print(f"📡 SATELLITE REPORT: {data.get('satellite_id', 'UNKNOWN')}")
+        print(f"   SNR:      {snr:.2f} dB")
+        print(f"   Doppler:  {doppler:.2f} Hz")
+        print(f"   Status:   SUCCESS")
         
-        # Acknowledge the message (removes it from RabbitMQ)
         ch.basic_ack(delivery_tag=method.delivery_tag)
+        
     except Exception as e:
-        print(f" [!] Error processing message: {e}")
+        # If it fails, we still ACK it to remove the "bad" message from the queue
+        # otherwise it will loop forever!
+        print(f" [!] Permanent failure on message: {e}")
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
 def start_consumer():
     print(f"[*] Connecting to {RABBITMQ_HOST}...")
