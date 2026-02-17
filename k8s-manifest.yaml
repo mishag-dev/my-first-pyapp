@@ -1,33 +1,58 @@
+# --- RabbitMQ Infrastructure ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: info-app-deployment
+  name: rabbitmq
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: info-app
+      app: rabbitmq
   template:
     metadata:
       labels:
-        app: info-app
+        app: rabbitmq
     spec:
       containers:
-      - name: my-python-app
-        image: info-app:v1  # <--- Match the name you used in the 'docker build'
-        imagePullPolicy: IfNotPresent  # <--- THIS IS THE FIX
+      - name: rabbitmq
+        image: rabbitmq:3-management
         ports:
-        - containerPort: 5000
+        - containerPort: 5672 # RabbitMQ Port
+        - containerPort: 15672 # Management UI Port
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: info-app-service
+  name: rabbitmq
 spec:
-  type: LoadBalancer
-  selector:
-    app: info-app
   ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 5000
+  - port: 5672
+    targetPort: 5672
+  - name: mgmt
+    port: 15672
+    targetPort: 15672
+  selector:
+    app: rabbitmq
+---
+# --- Satcom Telemetry App ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: satcom-statgen-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: satcom-statgen
+  template:
+    metadata:
+      labels:
+        app: satcom-statgen
+    spec:
+      containers:
+      - name: satcom-statgen-app
+        image: satcom-statgen:v1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"

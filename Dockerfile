@@ -16,5 +16,5 @@ EXPOSE 5000
 # Define environment variable
 ENV NAME World
 
-# Run info.py when the container launches
-CMD ["python", "info.py"]
+# Run satcom-statgen.py when the container launches
+CMD ["python", "satcom-statgen.py"]

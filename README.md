@@ -1,3 +1,3 @@
-# My First Python App
+# SatCom StatGen
 
-This is a simple Python application that displays environment information.
+This application generates random statistics for a satellite air channel and publishes them to a RabbitMQ control bus.
