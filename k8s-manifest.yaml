@@ -57,3 +57,5 @@ spec:
         env:
         - name: RABBITMQ_HOST
           value: "rabbitmq"
+        - name: PYTHONUNBUFFERED
+          value: "1"
