@@ -26,6 +26,7 @@ metadata:
   name: rabbitmq
 spec:
   ports:
+  - name: amqp
   - port: 5672
     targetPort: 5672
   - name: mgmt
