@@ -51,7 +51,7 @@ def generate_satellite_stats():
                 body=message
             )
             
-            print(f" [x] Sent: {data['satellite_id']} | SNR: {data['snr_db']} dB")
+            print(f" [x] Sent: {data['satellite_id']} | SNR: {data['snr_db']} dB | Doppler: {data['doppler_shift_hz']} Hz")
 
             # Use the values from the ConfigMap
             sleep_time = random.uniform(DELAY_MIN, DELAY_MAX)

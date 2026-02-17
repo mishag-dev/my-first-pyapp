@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: satcom-consumer-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: satcom-consumer
+  template:
+    metadata:
+      labels:
+        app: satcom-consumer
+    spec:
+      containers:
+      - name: satcom-consumer-app
+        image: your-docker-username/satcom-statgen:latest # Use your CI-built image
+        imagePullPolicy: Always
+        command: ["python3", "satcom-consumer.py"] # Override to run consumer
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: PYTHONUNBUFFERED
+          value: "1"

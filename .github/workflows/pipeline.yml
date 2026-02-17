@@ -1,0 +1,44 @@
+name: Satcom CI-CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'satcom-statgen.py'
+      - 'satcom-consumer.py' # Added this trigger
+      - 'Dockerfile'
+      - 'requirements.txt'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }} # Use your PAT for the checkout to allow pushing back
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/satcom-statgen:${{ github.run_id }}
+
+      - name: Update Kubernetes Manifests
+        run: |
+          # This command now finds ALL deployment files and updates the image tag in one go
+          sed -i "s|image: .*|image: ${{ secrets.DOCKER_USERNAME }}/satcom-statgen:${{ github.run_id }}|g" k8s/satcom-statgen-deployment.yaml
+          sed -i "s|image: .*|image: ${{ secrets.DOCKER_USERNAME }}/satcom-statgen:${{ github.run_id }}|g" k8s/satcom-consumer-deployment.yaml
+          
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git add k8s/*.yaml
+          git commit -m "Update image to version ${{ github.run_id }} [skip ci]"
+          git push

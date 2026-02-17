@@ -1,20 +1,23 @@
-# Use the official Python slim image as a parent image
-FROM python:3.9-slim
+# Use a modern, stable Python slim image
+FROM python:3.11-slim
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app/
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
+# Copy all scripts into the container
+# This ensures both satcom-statgen.py and satcom-consumer.py are available
+COPY . .
 
-# Define environment variable
-ENV NAME World
+# Python unbuffered ensures logs are sent to stdout immediately
+ENV PYTHONUNBUFFERED=1
 
-# Run satcom-statgen.py when the container launches
+# We remove the hardcoded CMD so we can specify which script to run 
+# in the Kubernetes 'command' field. 
+# Providing a default just in case:
 CMD ["python", "satcom-statgen.py"]
