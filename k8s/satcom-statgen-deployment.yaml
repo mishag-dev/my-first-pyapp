@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: satcom-statgen-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: satcom-statgen
+  template:
+    metadata:
+      labels:
+        app: satcom-statgen
+    spec:
+      containers:
+      - name: satcom-statgen-app
+        image: satcom-statgen:v1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: PYTHONUNBUFFERED
+          value: "1"
