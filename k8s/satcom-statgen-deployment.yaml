@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: satcom-statgen-app
-        image: mishag/satcom-statgen:v1
+        image: taziar77/satcom-statgen:22087447368
         imagePullPolicy: IfNotPresent
         env:
         - name: RABBITMQ_HOST

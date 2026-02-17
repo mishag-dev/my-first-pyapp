@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: satcom-consumer-app
-        image: your-docker-username/satcom-statgen:latest # Use your CI-built image
+        image: taziar77/satcom-statgen:22087447368
         imagePullPolicy: Always
         command: ["python3", "satcom-consumer.py"] # Override to run consumer
         env:
